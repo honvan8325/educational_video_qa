@@ -12,6 +12,7 @@ import { QA } from '../components/QA'
 import { VideoList } from '../components/VideoList'
 import { WorkspaceList } from '../components/WorkspaceList'
 import { useCustomMutation } from '../hooks/useCustomMutation'
+import { QAApi } from '../apiServices/qa'
 
 export function Home() {
 	const [accessToken] = useLocalStorage('access_token', '')
@@ -50,6 +51,17 @@ export function Home() {
 		queryFn: () => WorkspacesApi.getWorkspace(workspaceId!),
 		enabled: !!workspaceId,
 	})
+
+	const { mutate: deleteAllHistory, isPending: isDeletingHistory } =
+		useCustomMutation({
+			mutationFn: QAApi.deleteAllHistory,
+			onSuccess() {
+				queryClient.invalidateQueries({
+					queryKey: ['qa', workspaceId],
+				})
+			},
+			successMessage: 'All history deleted successfully!',
+		})
 
 	return (
 		<>
@@ -101,6 +113,21 @@ export function Home() {
 						classNames={{
 							body: 'flex-1 overflow-hidden min-h-0 flex flex-col',
 						}}
+						extra={
+							workspaceId && (
+								<Button
+									size='small'
+									type='text'
+									danger
+									onClick={() => {
+										deleteAllHistory(workspaceId)
+									}}
+									loading={isDeletingHistory}
+								>
+									Clear
+								</Button>
+							)
+						}
 					>
 						{workspaceId ? (
 							<QA
@@ -123,7 +150,7 @@ export function Home() {
 						{workspaceId ? (
 							<>
 								<Button
-									className='mb-4'
+									className='mb-4 shrink'
 									block
 									icon={<YoutubeOutlined />}
 									onClick={() => setOpenAddVideoModal(true)}

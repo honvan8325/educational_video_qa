@@ -1,7 +1,11 @@
-import { DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons'
+import {
+	DeleteOutlined,
+	PlayCircleOutlined,
+	SearchOutlined,
+} from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Checkbox, List } from 'antd'
-import { useEffect } from 'react'
+import { Button, Checkbox, Input, List } from 'antd'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useLocalStorage } from 'usehooks-ts'
 import { VideosApi } from '../apiServices/videos'
@@ -55,9 +59,22 @@ export function VideoList({
 		},
 	})
 
+	const [search, setSearch] = useState('')
+
 	return (
-		<div className='flex flex-col overflow-hidden min-h-0'>
+		<div className='flex flex-col overflow-hidden min-h-0 flex-1'>
 			<div className='mb-3'>
+				<Input
+					size='middle'
+					placeholder='Search videos'
+					allowClear
+					value={search}
+					onChange={e => setSearch(e.target.value)}
+					suffix={<SearchOutlined />}
+				/>
+			</div>
+
+			<div className='mb-3 flex items-center justify-between'>
 				<Checkbox
 					disabled={isLoading || !data || data.length === 0}
 					onChange={e => {
@@ -74,14 +91,29 @@ export function VideoList({
 						selectedVideos.length === data?.length ? true : false
 					}
 				>
-					Select All
+					Select All ({selectedVideos.length})
 				</Checkbox>
+
+				<span
+					onClick={() => {
+						setSearch('')
+					}}
+					className='text-gray-500! text-sm! cursor-pointer underline'
+				>
+					Clear filters
+				</span>
 			</div>
 
 			<List
 				bordered
 				loading={isLoading}
-				dataSource={data}
+				dataSource={data?.filter(video => {
+					try {
+						return new RegExp(search, 'i').test(video.filename)
+					} catch {
+						return true
+					}
+				})}
 				className='flex-1 overflow-auto'
 				renderItem={item => (
 					<List.Item

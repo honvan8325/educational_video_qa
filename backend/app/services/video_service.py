@@ -71,7 +71,8 @@ async def upload_video(
     )
 
     await db.videos.update_one(
-        {"_id": ObjectId(video_id)}, {"$set": {"thumbnail_path": thumbnail_path, "duration": duration}}
+        {"_id": ObjectId(video_id)},
+        {"$set": {"thumbnail_path": thumbnail_path, "duration": duration}},
     )
     created_video.thumbnail_path = thumbnail_path
     created_video.duration = duration
@@ -82,18 +83,29 @@ async def upload_video(
         original_texts = [unit.text.strip() for unit in context_units_data]
 
         # Create refinement prompts with more transformative instructions to avoid copyright detection
-        refine_prompt_template = """Hãy tóm tắt và diễn giải lại nội dung sau bằng cách hiểu ý chính và viết lại hoàn toàn:
+        refine_prompt_template = """Hãy đọc kỹ đoạn nội dung sau (bao gồm visual_text + audio_text). 
+Hãy hiểu ý chính và DIỄN GIẢI LẠI HOÀN TOÀN theo cách của bạn, không sao chép.
 
-Nội dung: {text}
+Nhiệm vụ:
+- Trích lọc & tổng hợp các thông tin LIÊN QUAN TỚI BÀI GIẢNG (kiến thức, lý thuyết, công thức, ví dụ, quan hệ, định nghĩa…)
+- Giữ NGUYÊN đầy đủ các nội dung học thuật xuất hiện trên slide (ý chính, công thức, thuật ngữ, quan hệ từ vựng…)
+- Loại bỏ toàn bộ phần không mang kiến thức: mô tả hình ảnh giảng viên, màu nền, bố cục, logo, intro, filler.
+- Ghép audio + slide thành một bản DIỄN GIẢI RÕ RÀNG – LOGIC – TỐI ƯU CHO SEMANTIC SEARCH.
+- Viết lại bằng ngôn ngữ tự nhiên, rõ nghĩa, tránh lặp lại văn bản gốc để hạn chế kiểm tra bản quyền.
+- Giữ nguyên các ký hiệu toán học, vector, công thức (không được lược bỏ).
+- Các ví dụ trên slide (như king–queen, Berlin–Germany, apples–apple+car…) phải được giữ lại đầy đủ.
+- Ưu tiên diễn giải theo dạng "giải thích khái niệm + công thức + ví dụ + kết luận".
 
-Hãy:
-- Hiểu ý chính và viết lại bằng từ ngữ của riêng bạn
-- Loại bỏ từ đệm và câu nói ấp úng
-- Sắp xếp logic, rõ ràng, súc tích
-- Giữ thuật ngữ kỹ thuật quan trọng
-- KHÔNG sao chép nguyên văn, hãy diễn đạt theo cách khác
+Đầu ra:
+- Một đoạn văn tóm lược – diễn giải mới hoàn toàn, mạch lạc, rõ ràng
+- Có thể dùng làm context cho Educational Video QA hoặc semantic RAG search
+- Không để sót bất kỳ nội dung kiến thức nào trong đoạn gốc
 
-Nội dung đã diễn giải:"""
+Nội dung cần diễn giải:
+{text}
+
+Nội dung đã diễn giải:
+"""
 
         prompts = [refine_prompt_template.format(text=text) for text in original_texts]
 

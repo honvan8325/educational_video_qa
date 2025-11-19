@@ -12,3 +12,8 @@
 		height: fit-content !important;
 	}
 }
+
+.katex,
+.katex * {
+	all: revert;
+}

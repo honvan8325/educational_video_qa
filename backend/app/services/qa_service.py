@@ -1,3 +1,4 @@
+import time
 from typing import List, Tuple, Dict, Optional
 from fastapi import HTTPException, status
 from app.database import get_database
@@ -9,16 +10,7 @@ from datetime import datetime, timezone
 
 
 async def fetch_context_units_by_ids(db, context_ids: List[str]) -> List[ContextUnit]:
-    """
-    Fetch context units by their IDs and maintain order.
 
-    Args:
-        db: Database instance
-        context_ids: List of context unit IDs
-
-    Returns:
-        List of ContextUnit objects in the same order as context_ids
-    """
     if not context_ids:
         return []
 
@@ -48,7 +40,13 @@ async def ask_question(
     user_id: str,
     question: str,
     video_ids: Optional[List[str]] = None,
-) -> Tuple[str, str, List[ContextUnit]]:
+    retriever_type: str = "vector",
+    generator_type: str = "gemini",
+    embedding_model: str = "dangvantuan",
+    use_reranker: bool = False,
+    use_history: bool = False,
+    history_count: int = 3,
+) -> Tuple[str, str, List[ContextUnit], float]:
     db = await get_database()
 
     workspace_dict = await db.workspaces.find_one(
@@ -71,9 +69,33 @@ async def ask_question(
             detail="No processed videos available in this workspace",
         )
 
+    conversation_history = None
+    if use_history and history_count > 0:
+        history_records = (
+            await db.qa.find({"workspace_id": workspace_id})
+            .sort("created_at", -1)
+            .limit(history_count)
+            .to_list(history_count)
+        )
+
+        conversation_history = [
+            {"question": record["question"], "answer": record["answer"]}
+            for record in reversed(history_records)
+        ]
+
+    # Measure response time
+    start_time = time.time()
     answer, context_ids = await rag_service.answer_question(
-        workspace_id, question, video_ids
+        workspace_id,
+        question,
+        video_ids,
+        retriever_type,
+        generator_type,
+        embedding_model,
+        use_reranker,
+        conversation_history,
     )
+    response_time = time.time() - start_time
 
     # Save Q&A record
     qa = QA(
@@ -81,6 +103,7 @@ async def ask_question(
         question=question,
         answer=answer,
         source_context_ids=context_ids,
+        response_time=response_time,
     )
     qa_dict = qa.model_dump(by_alias=True, exclude={"id"})
     result = await db.qa.insert_one(qa_dict)
@@ -93,22 +116,13 @@ async def ask_question(
     # Fetch full context unit data for response
     context_units = await fetch_context_units_by_ids(db, context_ids)
 
-    return question, answer, context_units
+    return question, answer, context_units, response_time
 
 
 async def get_qa_history(
     workspace_id: str, user_id: str
 ) -> List[Tuple[QA, List[ContextUnit]]]:
-    """
-    Get Q&A history for a workspace.
 
-    Args:
-        workspace_id: ID of the workspace
-        user_id: ID of the user
-
-    Returns:
-        List of QA objects sorted by creation date (newest first)
-    """
     db = await get_database()
 
     # Verify workspace exists and user has access
@@ -130,10 +144,51 @@ async def get_qa_history(
         qa_dict = convert_objectid_to_str(qa_dict)
         qa = QA(**qa_dict)
 
-        # Fetch context units for this QA
         context_units = await fetch_context_units_by_ids(db, qa.source_context_ids)
 
-        # Return tuple of (QA, List[ContextUnit])
         qas_with_contexts.append((qa, context_units))
 
     return qas_with_contexts
+
+
+async def delete_all_qa_records(workspace_id: str, user_id: str) -> None:
+    db = await get_database()
+
+    workspace_dict = await db.workspaces.find_one(
+        {"_id": prepare_id_filter(workspace_id), "user_id": user_id}
+    )
+
+    if not workspace_dict:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found",
+        )
+
+    await db.qa.delete_many({"workspace_id": workspace_id})
+
+
+async def delete_qa_record(workspace_id: str, qa_id: str, user_id: str) -> None:
+    db = await get_database()
+
+    workspace_dict = await db.workspaces.find_one(
+        {"_id": prepare_id_filter(workspace_id), "user_id": user_id}
+    )
+
+    if not workspace_dict:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found",
+        )
+
+    result = await db.qa.delete_one(
+        {
+            "_id": prepare_id_filter(qa_id),
+            "workspace_id": workspace_id,
+        }
+    )
+
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Q&A record not found",
+        )

@@ -1,3 +1,7 @@
+import os
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -45,7 +49,9 @@ videos_dir.mkdir(parents=True, exist_ok=True)
 thumbnails_dir.mkdir(parents=True, exist_ok=True)
 
 app.mount("/static/videos", StaticFiles(directory=str(videos_dir)), name="videos")
-app.mount("/static/thumbnails", StaticFiles(directory=str(thumbnails_dir)), name="thumbnails")
+app.mount(
+    "/static/thumbnails", StaticFiles(directory=str(thumbnails_dir)), name="thumbnails"
+)
 
 
 @app.get("/")

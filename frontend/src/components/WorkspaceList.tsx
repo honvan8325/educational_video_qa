@@ -1,7 +1,7 @@
 import {
 	DeleteOutlined,
 	EditOutlined,
-	EllipsisOutlined,
+	EllipsisOutlined
 } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Dropdown, List } from 'antd'
@@ -83,6 +83,7 @@ export function WorkspaceList() {
 												)
 											},
 										},
+
 										{
 											key: '2',
 											label: 'Delete',

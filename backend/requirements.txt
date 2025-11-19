@@ -17,9 +17,10 @@ torchvision
 pillow
 numpy
 python-dotenv
-google-generativeai
+google-genai
 transnetv2_pytorch
 open-clip-torch
 transformers
 scipy
 langchain-huggingface
+rank-bm25

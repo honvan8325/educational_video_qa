@@ -5,7 +5,12 @@ from app.schemas.qa import QuestionRequest, AnswerResponse, QAResponse
 from app.schemas.context_unit import ContextUnitResponse
 from app.models.user import User
 from app.api.deps import get_current_user
-from app.services.qa_service import ask_question, get_qa_history
+from app.services.qa_service import (
+    ask_question,
+    get_qa_history,
+    delete_all_qa_records,
+    delete_qa_record,
+)
 
 router = APIRouter()
 
@@ -16,11 +21,19 @@ async def ask_question_endpoint(
     question_data: QuestionRequest,
     current_user: User = Depends(get_current_user),
 ):
-    question, answer, context_units = await ask_question(
-        workspace_id, str(current_user.id), question_data.question, question_data.video_ids
+    question, answer, context_units, response_time = await ask_question(
+        workspace_id,
+        str(current_user.id),
+        question_data.question,
+        question_data.video_ids,
+        question_data.retriever_type,
+        question_data.generator_type,
+        question_data.embedding_model,
+        question_data.use_reranker,
+        question_data.use_history,
+        question_data.history_count,
     )
 
-    # Convert ContextUnit models to ContextUnitResponse
     source_contexts = [
         ContextUnitResponse(
             id=cu.id,
@@ -37,6 +50,7 @@ async def ask_question_endpoint(
         question=question,
         answer=answer,
         source_contexts=source_contexts,
+        response_time=response_time,
     )
 
 
@@ -45,7 +59,6 @@ async def get_qa_history_endpoint(
     workspace_id: str,
     current_user: User = Depends(get_current_user),
 ):
-    """Get Q&A history for a workspace."""
     qas_with_contexts = await get_qa_history(workspace_id, str(current_user.id))
 
     return [
@@ -65,7 +78,27 @@ async def get_qa_history_endpoint(
                 )
                 for cu in context_units
             ],
+            response_time=qa.response_time,
             created_at=qa.created_at,
         )
         for qa, context_units in qas_with_contexts
     ]
+
+
+@router.delete("/{workspace_id}/history")
+async def delete_qa_history_endpoint(
+    workspace_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    await delete_all_qa_records(workspace_id, str(current_user.id))
+    return {"detail": "Q&A history deleted successfully."}
+
+
+@router.delete("/{workspace_id}/history/{qa_id}")
+async def delete_qa_record_endpoint(
+    workspace_id: str,
+    qa_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    await delete_qa_record(workspace_id, qa_id, str(current_user.id))
+    return {"detail": "Q&A record deleted successfully."}

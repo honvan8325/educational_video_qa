@@ -9,6 +9,7 @@ class QA(BaseModel):
     question: str
     answer: str
     source_context_ids: List[str] = Field(default_factory=list)
+    response_time: float = 0.0
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:

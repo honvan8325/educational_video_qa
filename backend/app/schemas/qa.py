@@ -5,28 +5,32 @@ from app.schemas.context_unit import ContextUnitResponse
 
 
 class QuestionRequest(BaseModel):
-    """Schema for asking a question."""
-
     question: str
-    video_ids: Optional[List[str]] = None  # Filter to specific videos, None = all videos
+    video_ids: Optional[List[str]] = None
+    retriever_type: str = "vector"
+    generator_type: str = "gemini"
+    embedding_model: str = "dangvantuan"
+    use_reranker: bool = False
+    use_history: bool = False
+    history_count: int = 3
 
 
 class AnswerResponse(BaseModel):
-    """Schema for answer response."""
 
     question: str
     answer: str
     source_contexts: List[ContextUnitResponse]
+    response_time: float
 
 
 class QAResponse(BaseModel):
-    """Schema for Q&A record response."""
 
     id: str
     workspace_id: str
     question: str
     answer: str
     source_contexts: List[ContextUnitResponse]
+    response_time: float
     created_at: datetime
 
     class Config:

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button, Form, Modal, Upload } from 'antd'
 import { VideosApi } from '../apiServices/videos'
 import { useCustomMutation } from '../hooks/useCustomMutation'
+import { useLocalStorage } from 'usehooks-ts'
 
 export function AddVideo({
 	open,
@@ -15,12 +16,28 @@ export function AddVideo({
 }) {
 	const [form] = Form.useForm()
 	const queryClient = useQueryClient()
+
+	const [savedSelectedVideos, setSavedSelectedVideos] = useLocalStorage<
+		string[] | undefined
+	>(`selected_videos_${workspaceId}`, undefined, {
+		serializer: value => JSON.stringify(value),
+		deserializer: value => JSON.parse(value),
+	})
+
 	const { mutate, isPending } = useCustomMutation({
 		mutationFn: VideosApi.uploadVideo,
-		onSuccess() {
+		onSuccess(data) {
 			queryClient.invalidateQueries({
 				queryKey: ['videos', workspaceId],
 			})
+
+			if (savedSelectedVideos) {
+				setSavedSelectedVideos([
+					...savedSelectedVideos,
+					data.id,
+				])
+			}
+
 			setOpen(false)
 		},
 	})
@@ -92,6 +109,7 @@ export function AddVideo({
 								</a>
 							</p>
 						}
+						required
 						label='Extracted features'
 						name='context_units'
 						rules={[

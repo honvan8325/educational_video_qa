@@ -1,12 +1,27 @@
-import { ArrowRightOutlined, CopyOutlined } from '@ant-design/icons'
+import {
+	ArrowRightOutlined,
+	CopyOutlined,
+	DeleteOutlined,
+	EllipsisOutlined,
+} from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Empty, Input, Spin, Tag, Typography } from 'antd'
+import {
+	Button,
+	Card,
+	Dropdown,
+	Empty,
+	Input,
+	Spin,
+	Tag,
+	Typography,
+} from 'antd'
 import MarkdownIt from 'markdown-it'
 import mk from 'markdown-it-katex'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 import type Token from 'markdown-it/lib/token.mjs'
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocalStorage } from 'usehooks-ts'
 import { QAApi } from '../apiServices/qa'
 import { useCustomMutation } from '../hooks/useCustomMutation'
 import { useMessageStore } from '../stores/useMessageStore'
@@ -92,12 +107,32 @@ export function QA({
 		},
 	})
 
+	const { mutate: deleteQAItem } = useCustomMutation({
+		mutationFn: QAApi.deleteQAItem,
+		onSuccess() {
+			queryClient.invalidateQueries({
+				queryKey: ['qa', workspaceId],
+			})
+		},
+		successMessage: 'QA item deleted successfully!',
+	})
+
+	const [generatorType] = useLocalStorage<string>('generator_type', 'gemini')
+	const [retrieverType] = useLocalStorage<string>('retriever_type', 'vector')
+	const [embeddingModel] = useLocalStorage<string>(
+		'embedding_model',
+		'dangvantuan'
+	)
+	const [useReranker] = useLocalStorage<boolean>('use_reranker', false)
+	const [useHistory] = useLocalStorage<boolean>('use_history', true)
+	const [historyCount] = useLocalStorage<number>('history_count', 5)
+
 	const messageApi = useMessageStore(s => s.messageApi)
 
 	return (
 		<div className='flex flex-col flex-1 min-h-0'>
 			<div className='flex-1 overflow-y-auto min-h-0 flex flex-col justify-end py-4 -mx-4 px-4'>
-				{isSuccess && data.length == 0 && (
+				{isSuccess && data.length == 0 && !placeholder && (
 					<Empty description='Ask a question to get started!' />
 				)}
 
@@ -114,23 +149,59 @@ export function QA({
 							<div className='max-w-10/12 self-end bg-primary text-white px-6 py-4 rounded-2xl mb-2'>
 								{qa.question}
 							</div>
-							<Button
-								className='mb-4 self-end'
-								size='small'
-								type='text'
-								icon={<CopyOutlined />}
-								onClick={() => {
-									navigator.clipboard.writeText(qa.question)
-									messageApi?.success(
-										'Text copied to clipboard!'
-									)
-								}}
-							/>
+
+							<div className='flex self-end mb-4 items-center gap-1'>
+								<Button
+									size='small'
+									type='text'
+									icon={<CopyOutlined />}
+									onClick={() => {
+										navigator.clipboard.writeText(
+											qa.question
+										)
+										messageApi?.success(
+											'Text copied to clipboard!'
+										)
+									}}
+								/>
+
+								<Dropdown
+									trigger={['click']}
+									menu={{
+										items: [
+											{
+												key: 'delete',
+												label: 'Delete',
+												danger: true,
+												icon: <DeleteOutlined />,
+												onClick: () => {
+													deleteQAItem({
+														workspaceId,
+														qaId: qa.id,
+													})
+												},
+											},
+										],
+									}}
+								>
+									<Button
+										size='small'
+										type='text'
+										icon={<EllipsisOutlined />}
+									/>
+								</Dropdown>
+							</div>
 
 							<Card
 								className='max-w-10/12 self-start mb-2!'
 								size='small'
 							>
+								{typeof qa.response_time === 'number' && (
+									<div className='text-xs text-gray-500 mb-1 flex justify-end'>
+										{qa.response_time.toFixed(2)}s
+									</div>
+								)}
+
 								<div
 									className='prose prose-sm max-w-none!'
 									dangerouslySetInnerHTML={{
@@ -268,20 +339,48 @@ export function QA({
 								)}
 							</Card>
 
-							<Button
-								className='self-start'
-								size='small'
-								type='text'
-								icon={<CopyOutlined />}
-								onClick={() => {
-									navigator.clipboard.writeText(
-										qa.answer.replace(/\[(\d+)\]/g, '')
-									)
-									messageApi?.success(
-										'Text copied to clipboard!'
-									)
-								}}
-							/>
+							<div className='flex self-start items-center'>
+								<Button
+									className='self-start'
+									size='small'
+									type='text'
+									icon={<CopyOutlined />}
+									onClick={() => {
+										navigator.clipboard.writeText(
+											qa.answer.replace(/\[(\d+)\]/g, '')
+										)
+										messageApi?.success(
+											'Text copied to clipboard!'
+										)
+									}}
+								/>
+
+								<Dropdown
+									trigger={['click']}
+									menu={{
+										items: [
+											{
+												key: 'delete',
+												label: 'Delete',
+												danger: true,
+												icon: <DeleteOutlined />,
+												onClick: () => {
+													deleteQAItem({
+														workspaceId,
+														qaId: qa.id,
+													})
+												},
+											},
+										],
+									}}
+								>
+									<Button
+										size='small'
+										type='text'
+										icon={<EllipsisOutlined />}
+									/>
+								</Dropdown>
+							</div>
 						</div>
 					))}
 
@@ -312,13 +411,25 @@ export function QA({
 						value={question}
 						onChange={e => setQuestion(e.target.value)}
 						onKeyDown={e => {
-							if (e.key === 'Enter' && !e.shiftKey) {
+							if (
+								e.key === 'Enter' &&
+								!e.shiftKey &&
+								question.trim() &&
+								selectedVideos.length > 0 &&
+								!isPending
+							) {
 								e.preventDefault()
 								setPlaceholder(question.trim())
 								mutate({
 									workspaceId,
 									question: question.trim(),
 									videoIds: selectedVideos,
+									generatorType,
+									retrieverType,
+									embeddingModel,
+									useReranker,
+									useHistory,
+									historyCount,
 								})
 								setQuestion('')
 							}
@@ -341,15 +452,28 @@ export function QA({
 								workspaceId,
 								question: question.trim(),
 								videoIds: selectedVideos,
+								generatorType,
+								retrieverType,
+								embeddingModel,
+								useReranker,
+								useHistory,
+								historyCount,
 							})
 							setQuestion('')
 						}}
 					></Button>
 				</div>
 
-				<div className='mt-2'>
+				<div className='mt-2 flex items-center justify-between'>
 					<Typography.Text type='secondary'>
-						{selectedVideos.length} sources
+						{selectedVideos.length} sources | {generatorType} |{' '}
+						{retrieverType}
+						{retrieverType !== 'bm25' && ' | ' + embeddingModel}
+						{useReranker ? ' | Reranker enabled' : ''}
+					</Typography.Text>
+
+					<Typography.Text type='secondary'>
+						{data && `${data.length} Q&A`}
 					</Typography.Text>
 				</div>
 			</Card>

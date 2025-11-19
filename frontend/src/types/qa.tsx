@@ -7,4 +7,5 @@ export interface QA {
 	answer: string
 	source_contexts: ContextUnit[]
 	created_at: string
+	response_time: number
 }
