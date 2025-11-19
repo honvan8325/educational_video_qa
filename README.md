@@ -1,6 +1,25 @@
+![demo](./docs/images/demo.png)
+
 # Educational Video QA System
 
-An intelligent question-answering system for educational videos using a Retrieval-Augmented Generation (RAG) pipeline.
+### Course Project – CS431: Deep Learning Techniques and Applications
+
+### University of Information Technology – VNU-HCM (UIT)
+
+### Lecturer: Dr. Nguyễn Vinh Tiệp
+
+This project implements an intelligent question-answering system for educational videos using a Retrieval-Augmented Generation (RAG) pipeline. It enables users to upload video lectures, index their content, and ask natural-language questions which the system answers based on retrieved video segments.
+
+
+## Team Members
+
+| No. | Full Name         | Student ID | Role   |
+| --- | ----------------- | ---------- | ------ |
+| 1   | Pham Nguyen Tuong | 23521751   | Leader |
+| 2   | Chuong Hong Van   | 23521769   | Member |
+| 3   | Tang Hoang Phuc   | 23521219   | Member |
+
+
 
 ## Features
 
@@ -51,18 +70,14 @@ cd educational_video_qa
 ```bash
 cd backend
 
-# Create virtual environment
 python -m venv venv
 source venv/bin/activate     # macOS/Linux
-# or: venv\Scripts\activate   # Windows
+# or: venv\Scripts\activate  # Windows
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Create environment file
 cp .env.example .env
 
-# Start backend
 fastapi run app/main.py
 ```
 
@@ -72,7 +87,7 @@ Backend URL:
 http://localhost:8000
 ```
 
-API documentation:
+Documentation:
 
 ```
 http://localhost:8000/docs
@@ -163,7 +178,9 @@ npm run preview
 
 ## Contributing
 
-This project is built as part of the CS431 course on Deep Learning Techniques and Applications.
+This project is developed as part of
+**CS431 – Deep Learning Techniques and Applications**
+University of Information Technology – VNU-HCM.
 
 ## License
 
