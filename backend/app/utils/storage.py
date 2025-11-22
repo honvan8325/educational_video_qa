@@ -33,7 +33,7 @@ async def save_video_file(workspace_id: str, file: UploadFile) -> Tuple[str, int
         shutil.copyfileobj(file.file, buffer)
         file_size = file_path.stat().st_size
 
-    return str(file_path), file_size
+    return str(file_path).replace("\\", "/"), file_size
 
 
 def delete_video_file(file_path: str):
