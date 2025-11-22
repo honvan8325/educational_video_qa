@@ -69,8 +69,11 @@ const md = new MarkdownIt({
 	linkify: true,
 	breaks: true,
 })
-	.use(mk)
 	.use(citationPlugin)
+	.use(mk, {
+		throwOnError: false,
+		errorColor: ' #000',
+	})
 
 export function QA({
 	selectedVideos,
@@ -480,6 +483,7 @@ export function QA({
 									historyCount,
 								})
 								setQuestion('')
+								scrollToBottom()
 							}
 						}}
 					/>
@@ -508,6 +512,7 @@ export function QA({
 								historyCount,
 							})
 							setQuestion('')
+							scrollToBottom()
 						}}
 					></Button>
 				</div>
