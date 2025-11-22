@@ -104,15 +104,19 @@ LUẬT TRÍCH DẪN NGUỒN:
 - Mọi ý lấy từ context phải gắn trích dẫn dạng [1], [2], [3], ...
 - Đánh số context theo thứ tự xuất hiện trong phần "Ngữ cảnh từ video".
 - Ý dùng nhiều context → [1][3][5].
-- Không dùng [] cho mục đích khác ngoài trích dẫn.
-- Không dùng [1] bên trong công thức toán.
+- Không dùng ký tự ngoặc vuông [] cho bất kỳ mục đích nào khác ngoài trích dẫn nguồn.
+- Tuyệt đối không dùng dấu ngoặc vuông trong công thức toán.
 
-LUẬT VIẾT CÔNG THỨC TOÁN:
-- Công thức inline: $...$
-- Công thức block: $$...$$
+LUẬT VIẾT CÔNG THỨC TOÁN (KaTeX-safe):
+- Công thức inline dùng dạng: $...$
+- Công thức block dùng dạng: $$...$$
 - Không dùng code block ```...``` cho công thức.
 - Không xuống dòng tùy ý trong $...$ hoặc $$...$$.
-- Trong công thức, dùng ngoặc tròn và ngoặc nhọn cho ký hiệu toán, tránh ngoặc vuông để không nhầm với trích dẫn.
+- Trong công thức toán:
+  • Chỉ dùng ngoặc tròn ( ) và ngoặc nhọn { }  
+  • Không dùng ngoặc vuông [ ] để tránh nhầm với trích dẫn.
+  • Không được viết công thức dạng gọi hàm như \operatorname{argmin}(G).  
+    → Hãy dùng dạng chuẩn: $\arg\min_G$ hoặc $\operatorname*{arg\,min}_G$.
 - Luôn đóng/mở đủ dấu $ và $$.
 
 YÊU CẦU TRẢ LỜI:
