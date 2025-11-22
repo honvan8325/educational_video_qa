@@ -1,10 +1,13 @@
 import {
+	ArrowDownOutlined,
 	ArrowRightOutlined,
 	CopyOutlined,
 	DeleteOutlined,
 	EllipsisOutlined,
 } from '@ant-design/icons'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+
+import mk from '@vscode/markdown-it-katex'
 import {
 	Button,
 	Card,
@@ -16,10 +19,9 @@ import {
 	Typography,
 } from 'antd'
 import MarkdownIt from 'markdown-it'
-import mk from '@vscode/markdown-it-katex'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 import type Token from 'markdown-it/lib/token.mjs'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useLocalStorage } from 'usehooks-ts'
 import { QAApi } from '../apiServices/qa'
@@ -67,7 +69,7 @@ const md = new MarkdownIt({
 	linkify: true,
 	breaks: true,
 })
-.use(mk)
+	.use(mk)
 	.use(citationPlugin)
 
 export function QA({
@@ -129,9 +131,39 @@ export function QA({
 
 	const messageApi = useMessageStore(s => s.messageApi)
 
+	const containerRef = useRef<HTMLDivElement | null>(null)
+	const bottomRef = useRef<HTMLDivElement | null>(null)
+	const [showScrollDown, setShowScrollDown] = useState(false)
+
+	useEffect(() => {
+		const el = containerRef.current
+		if (!el) return
+
+		const handleScroll = () => {
+			const isNearBottom =
+				el.scrollHeight - el.scrollTop - el.clientHeight < 200
+
+			setShowScrollDown(!isNearBottom)
+		}
+
+		el.addEventListener('scroll', handleScroll)
+		return () => el.removeEventListener('scroll', handleScroll)
+	}, [])
+
+	const scrollToBottom = () => {
+		bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+	}
+
+	useEffect(() => {
+		bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+	}, [data])
+
 	return (
-		<div className='flex flex-col flex-1 min-h-0'>
-			<div className='flex-1 overflow-y-auto min-h-0 flex flex-col py-4 -mx-4 px-4'>
+		<div className='flex flex-col flex-1 min-h-0 relative'>
+			<div
+				className='flex-1 overflow-y-auto min-h-0 flex flex-col py-4 -mx-4 px-4'
+				ref={containerRef}
+			>
 				{isSuccess && data.length == 0 && !placeholder && (
 					<Empty description='Ask a question to get started!' />
 				)}
@@ -398,6 +430,22 @@ export function QA({
 						</Card>
 					</div>
 				)}
+
+				<div ref={bottomRef} />
+			</div>
+
+			<div
+				className={`absolute left-1/2 -translate-x-1/2 bottom-28 z-10 ${
+					showScrollDown ? '' : 'hidden'
+				} transition-all ease-in-out duration-300`}
+			>
+				<Button
+					icon={<ArrowDownOutlined />}
+					onClick={scrollToBottom}
+					size='middle'
+					shape='circle'
+					type='primary'
+				/>
 			</div>
 
 			<Card size='small' className='shrink-0'>
