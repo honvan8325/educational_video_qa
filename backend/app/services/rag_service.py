@@ -113,10 +113,10 @@ LUẬT VIẾT CÔNG THỨC TOÁN (KaTeX-safe):
 - Không dùng code block ```...``` cho công thức.
 - Không xuống dòng tùy ý trong $...$ hoặc $$...$$.
 - Trong công thức toán:
-  • Chỉ dùng ngoặc tròn ( ) và ngoặc nhọn { }  
+  • Chỉ dùng ngoặc tròn ( ) và ngoặc nhọn {{}}  
   • Không dùng ngoặc vuông [ ] để tránh nhầm với trích dẫn.
-  • Không được viết công thức dạng gọi hàm như \operatorname{argmin}(G).  
-    → Hãy dùng dạng chuẩn: $\arg\min_G$ hoặc $\operatorname*{arg\,min}_G$.
+  • Không được viết công thức dạng gọi hàm như \\operatorname{{argmin}}(G).  
+    → Hãy dùng dạng chuẩn: $\\arg\\min_G$ hoặc $\operatorname*{{arg\\,min}}_G$.
 - Luôn đóng/mở đủ dấu $ và $$.
 
 YÊU CẦU TRẢ LỜI:
