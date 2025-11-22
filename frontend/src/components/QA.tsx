@@ -16,7 +16,7 @@ import {
 	Typography,
 } from 'antd'
 import MarkdownIt from 'markdown-it'
-import mk from 'markdown-it-katex'
+import mk from '@vscode/markdown-it-katex'
 import type StateInline from 'markdown-it/lib/rules_inline/state_inline.mjs'
 import type Token from 'markdown-it/lib/token.mjs'
 import { useState } from 'react'
